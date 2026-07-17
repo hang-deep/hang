@@ -30,6 +30,11 @@
 						<text class="order-id">订单号：{{ order.id }}</text>
 						<text class="order-status" :class="getStatusClass(order.status)">{{ order.status }}</text>
 					</view>
+					<view class="order-address" v-if="order.address">
+						<text class="address-icon">📍</text>
+						<text class="address-text">{{ order.address.name }} {{ order.address.phone }}</text>
+						<text class="address-detail">{{ order.address.province }} {{ order.address.city }} {{ order.address.district }} {{ order.address.detail }}</text>
+					</view>
 					<view class="order-items">
 						<view class="order-item" v-for="item in order.items" :key="item.id">
 							<image class="item-image" :src="item.image" mode="aspectFill" />
@@ -57,8 +62,15 @@
 								立即支付
 							</view>
 							<view 
-								class="action-btn success" 
+								class="action-btn" 
 								v-if="order.status === '待发货'"
+								@click="remindShip(order)"
+							>
+								提醒发货
+							</view>
+							<view 
+								class="action-btn success" 
+								v-if="order.status === '待收货'"
 								@click="confirmOrder(order)"
 							>
 								确认收货
@@ -89,6 +101,7 @@ export default {
 				{ key: 'all', name: '全部' },
 				{ key: 'pending', name: '待支付' },
 				{ key: 'shipping', name: '待发货' },
+				{ key: 'receiving', name: '待收货' },
 				{ key: 'done', name: '已完成' }
 			]
 		}
@@ -103,6 +116,8 @@ export default {
 					return this.orders.filter(order => order.status === '待支付')
 				case 'shipping':
 					return this.orders.filter(order => order.status === '待发货')
+				case 'receiving':
+					return this.orders.filter(order => order.status === '待收货')
 				case 'done':
 					return this.orders.filter(order => order.status === '已完成')
 				default:
@@ -120,6 +135,8 @@ export default {
 					return this.orders.filter(o => o.status === '待支付').length
 				case 'shipping':
 					return this.orders.filter(o => o.status === '待发货').length
+				case 'receiving':
+					return this.orders.filter(o => o.status === '待收货').length
 				case 'done':
 					return this.orders.filter(o => o.status === '已完成').length
 				default:
@@ -132,6 +149,8 @@ export default {
 					return 'pending'
 				case '待发货':
 					return 'shipping'
+				case '待收货':
+					return 'receiving'
 				case '已完成':
 					return 'done'
 				default:
@@ -149,10 +168,21 @@ export default {
 							uni.hideLoading()
 							store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待发货' })
 							uni.showToast({ title: '支付成功', icon: 'success' })
+							
+							setTimeout(() => {
+								store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待收货' })
+							}, 2000)
 						}, 1500)
 					}
 				}
 			})
+		},
+		remindShip(order) {
+			uni.showToast({ title: '已提醒卖家发货', icon: 'none' })
+			
+			setTimeout(() => {
+				store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待收货' })
+			}, 2000)
 		},
 		confirmOrder(order) {
 			uni.showModal({
@@ -267,7 +297,15 @@ page {
 .order-status { font-size: 26rpx; font-weight: bold; }
 .order-status.pending { color: #ff6b6b; }
 .order-status.shipping { color: #ffaa00; }
+.order-status.receiving { color: #1890ff; }
 .order-status.done { color: #00c853; }
+.order-address {
+	background-color: #f9f9f9; padding: 16rpx; border-radius: 12rpx;
+	margin-bottom: 16rpx;
+}
+.address-icon { font-size: 28rpx; margin-right: 8rpx; }
+.address-text { font-size: 28rpx; color: #333; font-weight: bold; }
+.address-detail { display: block; font-size: 26rpx; color: #666; margin-top: 8rpx; }
 .order-items { display: flex; flex-direction: column; }
 .order-item { display: flex; margin-bottom: 16rpx; }
 .order-item:last-child { margin-bottom: 0; }

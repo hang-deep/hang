@@ -1,4 +1,7 @@
-var express = require('express');
+var fs = require('fs');
+var path = require('path');
+
+var code = `var express = require('express');
 var db = require('./db');
 var app = express();
 
@@ -7,12 +10,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.all('*', function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-    return;
-  }
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   next();
 });
 
@@ -68,18 +66,25 @@ app.post('/api/addUser', async function(req, res) {
   try {
     var username = req.body.username;
     var password = req.body.password;
+    var phone = req.body.phone;
     var checkSql = 'SELECT * FROM user WHERE username = ?';
     var [checkRows] = await db.query(checkSql, [username]);
     if (checkRows.length > 0) {
       res.json({ code: 400, msg: 'username exists' });
       return;
     }
-    var sql = 'INSERT INTO user(username, password) VALUES (?,?)';
-    await db.query(sql, [username, password]);
+    var sql = 'INSERT INTO user(username, password, phone) VALUES (?,?,?)';
+    await db.query(sql, [username, password, phone]);
     res.json({ code: 200, msg: 'success' });
   } catch (err) {
     res.json({ code: 500, msg: 'error', error: err.message });
   }
 });
 
-module.exports = app;
+app.listen(3000, function() {
+  console.log('Server running on port 3000');
+});`;
+
+var serverPath = path.join(__dirname, '..', 'train-server', 'app.js');
+fs.writeFileSync(serverPath, code);
+console.log('Fixed app.js successfully at:', serverPath);

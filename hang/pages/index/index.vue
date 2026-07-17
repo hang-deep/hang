@@ -30,8 +30,13 @@
 						<text class="goods-desc">{{ goods.desc }}</text>
 						<view class="goods-bottom">
 							<text class="goods-price">¥{{ goods.price }}</text>
-							<view class="add-cart" @click.stop="addToCart(goods)">
-								<text>+</text>
+							<view class="goods-actions">
+								<view class="favorite-btn" :class="{ active: isFavorite(goods.id) }" @click.stop="toggleFavorite(goods)">
+									<text>{{ isFavorite(goods.id) ? '❤️' : '🤍' }}</text>
+								</view>
+								<view class="add-cart" @click.stop="addToCart(goods)">
+									<text>+</text>
+								</view>
 							</view>
 						</view>
 					</view>
@@ -52,23 +57,36 @@ export default {
 			categories: [
 				{ id: 0, name: '全部' },
 				{ id: 1, name: '电子产品' },
-				{ id: 2, name: '服装' },
-				{ id: 3, name: '食品' },
-				{ id: 4, name: '家居' }
+				{ id: 2, name: '家居用品' },
+				{ id: 3, name: '美味食品' },
+				{ id: 4, name: '时尚服装' }
 			],
-			goodsList: [
-				{ id: 1, name: '无线蓝牙耳机', desc: '高品质音效，长续航', price: 199, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=wireless%20bluetooth%20earbuds%20white%20background%20product%20photo&image_size=square', category: 1 },
-				{ id: 2, name: '智能手表', desc: '健康监测，运动追踪', price: 499, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=smart%20watch%20fitness%20tracker%20white%20background%20product%20photo&image_size=square', category: 1 },
-				{ id: 3, name: '纯棉T恤', desc: '舒适透气，时尚百搭', price: 89, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=cotton%20t-shirt%20white%20background%20product%20photo&image_size=square', category: 2 },
-				{ id: 4, name: '运动跑鞋', desc: '轻便舒适，防滑耐磨', price: 299, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=sports%20running%20shoes%20white%20background%20product%20photo&image_size=square', category: 2 },
-				{ id: 5, name: '坚果礼盒', desc: '精选坚果，营养健康', price: 128, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=mixed%20nuts%20gift%20box%20white%20background%20product%20photo&image_size=square', category: 3 },
-				{ id: 6, name: '有机蜂蜜', desc: '纯天然，无添加', price: 68, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=organic%20honey%20jar%20white%20background%20product%20photo&image_size=square', category: 3 },
-				{ id: 7, name: '北欧台灯', desc: '简约设计，护眼光源', price: 159, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=nordic%20desk%20lamp%20minimalist%20white%20background%20product%20photo&image_size=square', category: 4 },
-				{ id: 8, name: '收纳盒套装', desc: '多功能收纳，整洁生活', price: 45, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=storage%20box%20set%20organizer%20white%20background%20product%20photo&image_size=square', category: 4 },
-				{ id: 9, name: '机械键盘', desc: 'RGB背光，青轴手感', price: 399, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=mechanical%20keyboard%20RGB%20lighting%20white%20background%20product%20photo&image_size=square', category: 1 },
-				{ id: 10, name: '连衣裙', desc: '优雅气质，修身显瘦', price: 189, image: 'https://neeko-copilot.bytedance.net/api/text2image?prompt=elegant%20dress%20white%20background%20product%20photo&image_size=square', category: 2 }
-			]
+			goodsList: []
 		}
+	},
+	onLoad() {
+		uni.request({
+			url: "http://127.0.0.1:3000/api/getGoodsList",
+			method: "GET",
+			success: (res) => {
+				console.log("后端商品数据：", res.data);
+				if (res.data.code === 200) {
+					let tempList = res.data.data.map(item => ({
+						id: item.id,
+						name: item.name,
+						desc: `库存：${item.stock}件`,
+						price: item.price,
+						image: item.img,
+						category: 0
+					}))
+					this.goodsList = this.distributeCategories(tempList)
+				}
+			},
+			fail: (err) => {
+				uni.showToast({ title: '商品加载失败，请开启后端终端', icon: 'none' })
+				console.error('请求报错', err)
+			}
+		})
 	},
 	computed: {
 		filteredGoods() {
@@ -85,12 +103,75 @@ export default {
 		}
 	},
 	methods: {
+		classifyByKeyword(name) {
+			name = name.toLowerCase()
+			if (name.includes('手机') || name.includes('耳机') || name.includes('电脑') || name.includes('键盘') || name.includes('鼠标') || name.includes('蓝牙') || name.includes('智能') || name.includes('电视') || name.includes('平板') || name.includes('相机') || name.includes('音响') || name.includes('充电') || name.includes('笔记本') || name.includes('pro') || name.includes('max') || name.includes('dji') || name.includes('osmo') || name.includes('天选') || name.includes('游戏机') || name.includes('显卡') || name.includes('cpu') || name.includes('内存') || name.includes('硬盘')) {
+				return 1
+			}
+			if (name.includes('桌子') || name.includes('椅子') || name.includes('床') || name.includes('沙发') || name.includes('柜子') || name.includes('台灯') || name.includes('收纳') || name.includes('窗帘') || name.includes('地毯') || name.includes('枕头') || name.includes('鞋架') || name.includes('实木') || name.includes('茶几') || name.includes('置物架') || name.includes('书架') || name.includes('衣柜') || name.includes('床头柜') || name.includes('鞋柜') || name.includes('电视柜') || name.includes('餐桌')) {
+				return 2
+			}
+			if (name.includes('零食') || name.includes('饼干') || name.includes('糖果') || name.includes('饮料') || name.includes('坚果') || name.includes('蜂蜜') || name.includes('水果') || name.includes('面包') || name.includes('牛奶') || name.includes('巧克力') || name.includes('糕点') || name.includes('丸子') || name.includes('鱼丸') || name.includes('肉脯') || name.includes('薯片') || name.includes('辣条') || name.includes('罐头') || name.includes('方便面') || name.includes('火腿肠')) {
+				return 3
+			}
+			if (name.includes('衣服') || name.includes('裤子') || name.includes('裙子') || name.includes('衬衫') || name.includes('T恤') || name.includes('短袖') || name.includes('鞋子') || name.includes('帽子') || name.includes('袜子') || name.includes('外套') || name.includes('毛衣') || name.includes('连衣裙') || name.includes('卫衣') || name.includes('牛仔裤') || name.includes('风衣') || name.includes('羽绒服') || name.includes('鞋') || name.includes('球鞋') || name.includes('跑鞋') || name.includes('运动鞋') || name.includes('休闲鞋') || name.includes('纯棉')) {
+				return 4
+			}
+			return 0
+		},
+		distributeCategories(list) {
+			const catGroups = { 1: [], 2: [], 3: [], 4: [] }
+			let uncategorized = []
+			
+			list.forEach(item => {
+				const cat = this.classifyByKeyword(item.name)
+				if (cat !== 0) {
+					catGroups[cat].push(item)
+				} else {
+					uncategorized.push(item)
+				}
+			})
+			
+			let overflow = []
+			for (const cat of [1, 2, 3, 4]) {
+				if (catGroups[cat].length > 3) {
+					overflow = overflow.concat(catGroups[cat].splice(3))
+				}
+			}
+			uncategorized = uncategorized.concat(overflow)
+			
+			for (const cat of [1, 2, 3, 4]) {
+				while (catGroups[cat].length < 3 && uncategorized.length > 0) {
+					const randomIndex = Math.floor(Math.random() * uncategorized.length)
+					const item = uncategorized.splice(randomIndex, 1)[0]
+					catGroups[cat].push(item)
+				}
+			}
+			
+			const result = []
+			for (const cat of [1, 2, 3, 4]) {
+				catGroups[cat].forEach(item => {
+					item.category = cat
+					result.push(item)
+				})
+			}
+			
+			return result
+		},
 		selectCategory(id) {
 			this.currentCategory = id
 		},
 		addToCart(goods) {
 			store.mutations.ADD_TO_CART(store.state, goods)
 			uni.showToast({ title: '已加入购物车', icon: 'success' })
+		},
+		toggleFavorite(goods) {
+			store.mutations.TOGGLE_FAVORITE(store.state, goods)
+			const isFav = store.getters.isFavorite(goods.id)
+			uni.showToast({ title: isFav ? '已收藏' : '已取消收藏', icon: 'none' })
+		},
+		isFavorite(goodsId) {
+			return store.getters.isFavorite(goodsId)
 		},
 		goDetail(id) {
 			uni.navigateTo({ url: `/pages/detail/detail?id=${id}` })
@@ -162,6 +243,10 @@ page {
 .goods-desc { font-size: 24rpx; color: #999; display: block; margin-bottom: 12rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .goods-bottom { display: flex; justify-content: space-between; align-items: center; }
 .goods-price { font-size: 32rpx; font-weight: bold; color: #ff6b6b; }
+.goods-actions { display: flex; align-items: center; }
+.favorite-btn {
+	font-size: 36rpx; margin-right: 16rpx;
+}
 .add-cart {
 	width: 48rpx; height: 48rpx; background-color: #ff6b6b; border-radius: 50%;
 	display: flex; align-items: center; justify-content: center; color: #fff; font-size: 32rpx;

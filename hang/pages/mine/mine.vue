@@ -5,10 +5,14 @@
 				<view class="user-avatar">👤</view>
 				<view class="user-detail">
 					<text class="user-name">{{ userInfo.name }}</text>
-					<text class="user-phone">{{ userInfo.phone }}</text>
 				</view>
 			</view>
-			<view class="user-arrow">›</view>
+			<view class="user-actions">
+					<view class="switch-user-btn" @click="goUserManage">
+						<text>切换用户</text>
+					</view>
+					<view class="user-arrow">›</view>
+				</view>
 		</view>
 		
 		<view class="stats-card">
@@ -68,10 +72,6 @@
 				</view>
 			</view>
 		</view>
-		
-		<view class="sign-out" @click="signOut">
-			<text>退出登录</text>
-		</view>
 	</view>
 </template>
 
@@ -116,10 +116,10 @@ export default {
 			uni.showToast({ title: '优惠券功能开发中', icon: 'none' })
 		},
 		showFavorite() {
-			uni.showToast({ title: '收藏功能开发中', icon: 'none' })
+			uni.navigateTo({ url: '/pages/favorites/favorites' })
 		},
 		showAddress() {
-			uni.showToast({ title: '地址管理功能开发中', icon: 'none' })
+			uni.navigateTo({ url: '/pages/address/address' })
 		},
 		showSetting() {
 			uni.showToast({ title: '设置功能开发中', icon: 'none' })
@@ -131,16 +131,8 @@ export default {
 				showCancel: false
 			})
 		},
-		signOut() {
-			uni.showModal({
-				title: '退出登录',
-				content: '确定要退出登录吗？',
-				success: (res) => {
-					if (res.confirm) {
-						uni.showToast({ title: '已退出', icon: 'success' })
-					}
-				}
-			})
+		goUserManage() {
+			uni.navigateTo({ url: '/pages/userManage/userManage' })
 		}
 	}
 }
@@ -173,9 +165,17 @@ page {
 	font-size: 56rpx; margin-right: 24rpx;
 }
 .user-detail { display: flex; flex-direction: column; }
-.user-name { font-size: 36rpx; font-weight: bold; color: #fff; margin-bottom: 8rpx; }
-.user-phone { font-size: 26rpx; color: rgba(255, 255, 255, 0.8); }
-.user-arrow { font-size: 48rpx; color: rgba(255, 255, 255, 0.8); }
+.user-name { font-size: 36rpx; font-weight: bold; color: #fff; }
+.user-actions { display: flex; flex-direction: column; align-items: center; }
+.switch-user-btn {
+			background-color: rgba(255, 255, 255, 0.3);
+			border: 1rpx solid rgba(255, 255, 255, 0.5);
+			padding: 8rpx 20rpx;
+			border-radius: 20rpx;
+			margin-bottom: 8rpx;
+		}
+		.switch-user-btn text { font-size: 22rpx; color: #fff; }
+		.user-arrow { font-size: 48rpx; color: rgba(255, 255, 255, 0.8); }
 
 .stats-card {
 	display: flex; background-color: #fff;
@@ -200,10 +200,4 @@ page {
 	padding: 6rpx 16rpx; border-radius: 20rpx; margin-right: 16rpx;
 }
 .menu-arrow { font-size: 36rpx; color: #ccc; }
-
-.sign-out {
-	text-align: center; padding: 32rpx;
-	margin: 40rpx 20rpx; background-color: #fff; border-radius: 16rpx;
-}
-.sign-out text { font-size: 30rpx; color: #999; }
 </style>

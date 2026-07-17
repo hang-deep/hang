@@ -164,12 +164,8 @@ export default {
 				uni.showToast({ title: '请选择商品', icon: 'none' })
 				return
 			}
-			store.mutations.CREATE_ORDER(store.state)
-			this.selectedItems = []
-			uni.showToast({ title: '下单成功', icon: 'success' })
-			setTimeout(() => {
-				uni.switchTab({ url: '/pages/orders/orders' })
-			}, 1500)
+			const selectedIds = this.selectedItems.join(',')
+			uni.navigateTo({ url: `/pages/checkout/checkout?selectedIds=${selectedIds}` })
 		}
 	}
 }
