@@ -13,8 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: '123456',
-  database: 'train_db'
+  password: '123456'
 })
 
 db.connect((err) => {
@@ -227,14 +226,29 @@ app.post('/api/login', (req, res) => {
 })
 
 app.post('/api/addUser', (req, res) => {
-  const { username, password, phone } = req.body
-  const sql = 'INSERT INTO user (username, password, phone) VALUES (?, ?, ?)'
-  db.query(sql, [username, password, phone], (err, results) => {
+  const { username, password } = req.body
+  if (!username || !password) {
+    return res.json({ code: 400, message: '请输入用户名和密码', data: null })
+  }
+  
+  const checkSql = 'SELECT * FROM user WHERE username = ?'
+  db.query(checkSql, [username], (err, results) => {
     if (err) {
-      res.json({ code: 500, message: '注册失败', data: null })
-    } else {
-      res.json({ code: 200, message: '注册成功', data: { id: results.insertId } })
+      console.error('查询用户失败:', err)
+      return res.json({ code: 500, message: '查询失败: ' + err.message, data: null })
     }
+    if (results.length > 0) {
+      return res.json({ code: 500, message: '用户名已存在', data: null })
+    }
+    
+    const insertSql = 'INSERT INTO user (username, password) VALUES (?, ?)'
+    db.query(insertSql, [username, password], (err, insertResults) => {
+      if (err) {
+        console.error('注册用户失败:', err)
+        return res.json({ code: 500, message: '注册失败: ' + err.message, data: null })
+      }
+      res.json({ code: 200, message: '注册成功', data: { id: insertResults.insertId } })
+    })
   })
 })
 

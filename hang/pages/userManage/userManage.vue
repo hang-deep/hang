@@ -124,20 +124,22 @@ export default {
 					username: this.registerForm.username,
 					password: this.registerForm.password
 				},
-				success: (res) => {
-					uni.hideLoading()
-					if (res.data.code === 200) {
-						this.registerError = ''
-						this.registerForm = { username: '', password: '' }
-						uni.showToast({ title: '注册成功', icon: 'success' })
-					} else {
-						this.registerError = res.data.message || '注册失败'
-					}
-				},
-				fail: () => {
-					uni.hideLoading()
-					this.registerError = '注册失败，请检查后端服务是否开启'
+			success: (res) => {
+				uni.hideLoading()
+				const data = res.data || {}
+				if (data.code === 200) {
+					this.registerError = ''
+					this.registerForm = { username: '', password: '' }
+					uni.showToast({ title: '注册成功', icon: 'success' })
+				} else {
+					this.registerError = data.message || data.msg || data.error || '注册失败'
 				}
+			},
+			fail: (err) => {
+				uni.hideLoading()
+				console.error('请求失败:', err)
+				this.registerError = '注册失败，请检查后端服务是否开启'
+			}
 			})
 		}
 	}

@@ -14,18 +14,18 @@ app.all('*', function(req, res, next) {
 app.get('/api/getUserList', async function(req, res) {
   try {
     var [rows] = await db.query('SELECT * FROM user');
-    res.json({ code: 200, msg: 'success', data: rows });
+    res.json({ code: 200, message: 'success', data: rows });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '获取用户列表失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
 app.get('/api/getGoodsList', async function(req, res) {
   try {
     var [rows] = await db.query('SELECT * FROM goods');
-    res.json({ code: 200, msg: 'success', data: rows });
+    res.json({ code: 200, message: 'success', data: rows });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '获取商品列表失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -37,9 +37,9 @@ app.post('/api/addGoods', async function(req, res) {
     var img = req.body.img;
     var sql = 'INSERT INTO goods(name,price,stock,img) VALUES (?,?,?,?)';
     await db.query(sql, [name, price, stock, img]);
-    res.json({ code: 200, msg: 'success' });
+    res.json({ code: 200, message: 'success' });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '添加商品失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -50,12 +50,12 @@ app.post('/api/login', async function(req, res) {
     var sql = 'SELECT * FROM user WHERE username = ? AND password = ?';
     var [rows] = await db.query(sql, [username, password]);
     if (rows.length > 0) {
-      res.json({ code: 200, msg: 'success', data: rows[0] });
+      res.json({ code: 200, message: 'success', data: rows[0] });
     } else {
-      res.json({ code: 401, msg: 'username or password error' });
+      res.json({ code: 401, message: '用户名或密码错误' });
     }
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '登录失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -63,29 +63,28 @@ app.post('/api/addUser', async function(req, res) {
   try {
     var username = req.body.username;
     var password = req.body.password;
-    var phone = req.body.phone;
     var checkSql = 'SELECT * FROM user WHERE username = ?';
     var [checkRows] = await db.query(checkSql, [username]);
     if (checkRows.length > 0) {
-      res.json({ code: 400, msg: 'username exists' });
+      res.json({ code: 400, message: '用户名已存在' });
       return;
     }
-    var sql = 'INSERT INTO user(username, password, phone) VALUES (?,?,?)';
-    await db.query(sql, [username, password, phone]);
-    res.json({ code: 200, msg: 'success' });
+    var sql = 'INSERT INTO user(username, password) VALUES (?,?)';
+    await db.query(sql, [username, password]);
+    res.json({ code: 200, message: 'success' });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '注册失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
 app.get('/api/getCartList', async function(req, res) {
   try {
     var userId = parseInt(req.query.userId) || 1;
-    var sql = 'SELECT c.id as cartId, c.goodsId, c.quantity, g.name, g.price, g.img, g.stock, (g.price * c.quantity) as subtotal FROM cart c JOIN goods g ON c.goodsId = g.id WHERE c.userId = ? ORDER BY c.createdAt DESC';
+    var sql = 'SELECT c.id as cartId, c.goodsId, c.quantity, g.name, g.price, g.img, g.stock, (g.price * c.quantity) as subtotal FROM cart c JOIN goods g ON c.goodsId = g.id WHERE c.userId = ? ORDER BY c.created_at DESC';
     var [rows] = await db.query(sql, [userId]);
-    res.json({ code: 200, msg: 'success', data: rows });
+    res.json({ code: 200, message: 'success', data: rows });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '获取购物车失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -93,6 +92,8 @@ app.post('/api/addToCart', async function(req, res) {
   try {
     var userId = parseInt(req.body.userId) || 1;
     var goodsId = parseInt(req.body.goodsId);
+    var name = req.body.name || '';
+    var price = parseFloat(req.body.price) || 0;
     var quantity = parseInt(req.body.quantity) || 1;
     
     var checkSql = 'SELECT * FROM cart WHERE userId = ? AND goodsId = ?';
@@ -102,13 +103,13 @@ app.post('/api/addToCart', async function(req, res) {
       var updateSql = 'UPDATE cart SET quantity = quantity + ? WHERE userId = ? AND goodsId = ?';
       await db.query(updateSql, [quantity, userId, goodsId]);
     } else {
-      var insertSql = 'INSERT INTO cart(userId, goodsId, quantity) VALUES (?,?,?)';
-      await db.query(insertSql, [userId, goodsId, quantity]);
+      var insertSql = 'INSERT INTO cart(userId, goodsId, name, price, quantity) VALUES (?,?,?,?,?)';
+      await db.query(insertSql, [userId, goodsId, name, price, quantity]);
     }
     
-    res.json({ code: 200, msg: 'success' });
+    res.json({ code: 200, message: 'success' });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '添加失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -126,9 +127,9 @@ app.post('/api/updateCart', async function(req, res) {
       await db.query(updateSql, [quantity, userId, goodsId]);
     }
     
-    res.json({ code: 200, msg: 'success' });
+    res.json({ code: 200, message: 'success' });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '更新购物车失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -140,9 +141,9 @@ app.post('/api/deleteFromCart', async function(req, res) {
     var sql = 'DELETE FROM cart WHERE userId = ? AND goodsId = ?';
     await db.query(sql, [userId, goodsId]);
     
-    res.json({ code: 200, msg: 'success' });
+    res.json({ code: 200, message: 'success' });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '删除购物车商品失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
@@ -153,9 +154,9 @@ app.post('/api/clearCart', async function(req, res) {
     var sql = 'DELETE FROM cart WHERE userId = ?';
     await db.query(sql, [userId]);
     
-    res.json({ code: 200, msg: 'success' });
+    res.json({ code: 200, message: 'success' });
   } catch (err) {
-    res.json({ code: 500, msg: 'error', error: err.message });
+    res.json({ code: 500, message: '清空购物车失败：' + (err.message || '未知错误'), error: err.message });
   }
 });
 
