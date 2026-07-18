@@ -107,21 +107,25 @@ export default {
 	},
 	onLoad(options) {
 		const goodsId = parseInt(options.id)
+		console.log('商品详情页 - goodsId:', goodsId)
 		uni.request({
 			url: 'http://127.0.0.1:3000/api/getGoodsList',
 			method: 'GET',
 			success: (res) => {
-				if (res.data.code === 200) {
+				console.log('商品详情页 - 后端响应:', res.data)
+				if (res.data.code === 200 && res.data.data && Array.isArray(res.data.data)) {
 					const goodsList = res.data.data.map(item => ({
-						id: item.id,
+						id: parseInt(item.id),
 						name: item.name,
-						desc: `库存：${item.stock}件`,
-						price: item.price,
+						desc: '库存：' + item.stock + '件',
+						price: parseFloat(item.price),
 						image: item.img,
 						category: this.getCategoryId(item.name),
-						stock: item.stock
+						stock: parseInt(item.stock)
 					}))
-					this.goods = goodsList.find(item => item.id === goodsId) || goodsList[0]
+					console.log('商品详情页 - goodsList:', goodsList)
+					this.goods = goodsList.find(item => item.id === goodsId) || goodsList[0] || {}
+					console.log('商品详情页 - 当前商品:', this.goods)
 					this.initDetailInfo()
 					this.initReviews()
 					if (this.goods && this.goods.id) {
@@ -129,9 +133,12 @@ export default {
 						console.log('浏览记录添加成功:', this.goods.name)
 						console.log('当前浏览记录长度:', store.getters.history.length)
 					}
+				} else {
+					uni.showToast({ title: '商品数据格式错误', icon: 'none' })
 				}
 			},
-			fail: () => {
+			fail: (err) => {
+				console.log('商品详情页 - 请求失败:', err)
 				uni.showToast({ title: '商品加载失败', icon: 'none' })
 			}
 		})
@@ -466,33 +473,33 @@ export default {
 			}
 		},
 		addToCart() {
-			console.log('加入购物车按钮点击')
-			console.log('userId:', this.userId)
-			console.log('goods:', this.goods)
 			if (!this.goods || !this.goods.id) {
-				console.log('商品数据未加载')
 				uni.showToast({ title: '商品数据未加载', icon: 'none' })
 				return
 			}
+			uni.showLoading({ title: '添加中...' })
 			uni.request({
 				url: 'http://127.0.0.1:3000/api/addToCart',
 				method: 'POST',
 				data: {
 					userId: this.userId,
-					goodsId: this.goods.id,
+					goodsId: parseInt(this.goods.id),
 					name: this.goods.name,
-					price: this.goods.price,
+					price: parseFloat(this.goods.price),
 					quantity: 1
 				},
 				success: (res) => {
-					console.log('加入购物车响应:', res)
+					uni.hideLoading()
 					if (res.data && res.data.code === 200) {
+						store.mutations.ADD_TO_CART(store.state, this.goods)
 						uni.showToast({ title: '已加入购物车', icon: 'success' })
+						this.cartCount = store.getters.cartCount
 					} else {
 						uni.showToast({ title: res.data?.message || '添加失败', icon: 'none' })
 					}
 				},
 				fail: (err) => {
+					uni.hideLoading()
 					console.log('加入购物车失败:', err)
 					uni.showToast({ title: '网络错误', icon: 'none' })
 				}
@@ -504,24 +511,35 @@ export default {
 			uni.showToast({ title: this.isFavorite ? '已收藏' : '已取消收藏', icon: 'none' })
 		},
 		buyNow() {
+			if (!this.goods || !this.goods.id) {
+				uni.showToast({ title: '商品数据未加载', icon: 'none' })
+				return
+			}
+			uni.showLoading({ title: '处理中...' })
 			uni.request({
 				url: 'http://127.0.0.1:3000/api/addToCart',
 				method: 'POST',
 				data: {
 					userId: this.userId,
-					goodsId: this.goods.id,
+					goodsId: parseInt(this.goods.id),
 					name: this.goods.name,
-					price: this.goods.price,
+					price: parseFloat(this.goods.price),
 					quantity: 1
 				},
 				success: (res) => {
-					if (res.data.code === 200) {
-						uni.navigateTo({ url: `/pages/checkout/checkout?selectedIds=${this.goods.id}` })
+					uni.hideLoading()
+					if (res.data && res.data.code === 200) {
+						store.mutations.ADD_TO_CART(store.state, this.goods)
+						uni.navigateTo({ 
+							url: '/pages/checkout/checkout?selectedIds=' + parseInt(this.goods.id) 
+						})
 					} else {
-						uni.showToast({ title: '添加失败', icon: 'none' })
+						uni.showToast({ title: res.data?.message || '添加失败', icon: 'none' })
 					}
 				},
-				fail: () => {
+				fail: (err) => {
+					uni.hideLoading()
+					console.log('立即购买失败:', err)
 					uni.showToast({ title: '网络错误', icon: 'none' })
 				}
 			})

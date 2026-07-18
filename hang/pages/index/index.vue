@@ -67,10 +67,10 @@ export default {
 				console.log("后端商品数据：", res.data);
 				if (res.data.code === 200) {
 					let tempList = res.data.data.map(item => ({
-						id: item.id,
+						id: parseInt(item.id),
 						name: item.name,
 						desc: `库存：${item.stock}件`,
-						price: item.price,
+						price: parseFloat(item.price),
 						image: item.img,
 						category: 0
 					}))

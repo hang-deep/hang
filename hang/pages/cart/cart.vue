@@ -80,6 +80,8 @@
 </template>
 
 <script>
+import store from '@/utils/store.js'
+
 export default {
 	data() {
 		return {
@@ -119,8 +121,15 @@ export default {
 				success: (res) => {
 					uni.hideLoading()
 					if (res.data.code === 200) {
-						this.cartList = res.data.data
+						this.cartList = res.data.data.map(item => ({
+							...item,
+							goodsId: parseInt(item.goodsId),
+							price: parseFloat(item.price),
+							quantity: parseInt(item.quantity),
+							stock: parseInt(item.stock)
+						}))
 						this.selectedItems = this.cartList.map(item => item.goodsId)
+						store.state.cartList = this.cartList
 					} else {
 						uni.showToast({ title: '加载失败', icon: 'none' })
 					}

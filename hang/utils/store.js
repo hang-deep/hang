@@ -15,7 +15,7 @@ const state = reactive({
 
 const mutations = {
   ADD_TO_CART(state, goods) {
-    const index = state.cartList.findIndex(item => item.id === goods.id)
+    const index = state.cartList.findIndex(item => (item.id || item.goodsId) === goods.id)
     if (index > -1) {
       state.cartList[index].quantity++
     } else {
@@ -23,13 +23,13 @@ const mutations = {
     }
   },
   INCREASE_CART(state, goodsId) {
-    const index = state.cartList.findIndex(item => item.id === goodsId)
+    const index = state.cartList.findIndex(item => (item.id || item.goodsId) === goodsId)
     if (index > -1) {
       state.cartList[index].quantity++
     }
   },
   DECREASE_CART(state, goodsId) {
-    const index = state.cartList.findIndex(item => item.id === goodsId)
+    const index = state.cartList.findIndex(item => (item.id || item.goodsId) === goodsId)
     if (index > -1) {
       if (state.cartList[index].quantity > 1) {
         state.cartList[index].quantity--
@@ -39,7 +39,7 @@ const mutations = {
     }
   },
   DELETE_FROM_CART(state, goodsId) {
-    const index = state.cartList.findIndex(item => item.id === goodsId)
+    const index = state.cartList.findIndex(item => (item.id || item.goodsId) === goodsId)
     if (index > -1) {
       state.cartList.splice(index, 1)
     }

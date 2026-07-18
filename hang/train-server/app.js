@@ -68,12 +68,13 @@ function createTables() {
       name: 'goods',
       sql: `CREATE TABLE IF NOT EXISTS goods (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
+        name VARCHAR(100) NOT NULL UNIQUE,
         price DECIMAL(10,2) NOT NULL,
         stock INT DEFAULT 0,
         img VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
+      )`,
+      dropFirst: true
     },
     {
       name: 'cart',
