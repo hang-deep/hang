@@ -1,9 +1,5 @@
 <template>
 	<view class="container">
-		<view class="header">
-			<text class="header-title">📋 我的订单</text>
-		</view>
-		
 		<view class="tabs">
 			<view 
 				class="tab-item" 
@@ -16,14 +12,14 @@
 				<view class="tab-badge" v-if="getTabCount(item.key) > 0">{{ getTabCount(item.key) }}</view>
 			</view>
 		</view>
-		
+
 		<scroll-view class="scroll-view" scroll-y>
 			<view class="orders-empty" v-if="filteredOrders.length === 0">
 				<text class="empty-icon">📦</text>
 				<text class="empty-text">暂无订单</text>
 				<view class="empty-btn" @click="goHome">去购物</view>
 			</view>
-			
+
 			<view class="orders-list" v-else>
 				<view class="order-card" v-for="order in filteredOrders" :key="order.id">
 					<view class="order-header">
@@ -51,37 +47,13 @@
 					<view class="order-footer">
 						<view class="order-total">
 							<text>合计：</text>
-							<text class="total-price">¥{{ order.totalPrice.toFixed(2) }}</text>
+							<text class="total-price">¥{{ parseFloat(order.totalPrice).toFixed(2) }}</text>
 						</view>
 						<view class="order-actions">
-							<view 
-								class="action-btn primary" 
-								v-if="order.status === '待支付'"
-								@click="payOrder(order)"
-							>
-								立即支付
-							</view>
-							<view 
-								class="action-btn" 
-								v-if="order.status === '待发货'"
-								@click="remindShip(order)"
-							>
-								提醒发货
-							</view>
-							<view 
-								class="action-btn success" 
-								v-if="order.status === '待收货'"
-								@click="confirmOrder(order)"
-							>
-								确认收货
-							</view>
-							<view 
-								class="action-btn" 
-								v-if="order.status === '已完成'"
-								@click="reviewOrder(order)"
-							>
-								评价
-							</view>
+							<view class="action-btn primary" v-if="order.status === '待支付'" @click="payOrder(order)">立即支付</view>
+							<view class="action-btn" v-if="order.status === '待发货'" @click="remindShip(order)">提醒发货</view>
+							<view class="action-btn success" v-if="order.status === '待收货'" @click="confirmOrder(order)">确认收货</view>
+							<view class="action-btn" v-if="order.status === '已完成'" @click="reviewOrder(order)">评价</view>
 						</view>
 					</view>
 				</view>
@@ -103,7 +75,8 @@ export default {
 				{ key: 'shipping', name: '待发货' },
 				{ key: 'receiving', name: '待收货' },
 				{ key: 'done', name: '已完成' }
-			]
+			],
+			ordersList: []
 		}
 	},
 	computed: {
@@ -111,22 +84,30 @@ export default {
 			return store.getters.orders
 		},
 		filteredOrders() {
+			let orders = [...this.orders]
 			switch(this.currentTab) {
 				case 'pending':
-					return this.orders.filter(order => order.status === '待支付')
+					return orders.filter(order => order.status === '待支付')
 				case 'shipping':
-					return this.orders.filter(order => order.status === '待发货')
+					return orders.filter(order => order.status === '待发货')
 				case 'receiving':
-					return this.orders.filter(order => order.status === '待收货')
+					return orders.filter(order => order.status === '待收货')
 				case 'done':
-					return this.orders.filter(order => order.status === '已完成')
+					return orders.filter(order => order.status === '已完成')
 				default:
-					return this.orders
+					return orders
 			}
 		}
 	},
+	onLoad(options) {
+		if (options && options.type) {
+			this.currentTab = options.type
+		}
+	},
 	onShow() {
-		this.currentTab = 'all'
+		if (!this.currentTab) {
+			this.currentTab = 'all'
+		}
 	},
 	methods: {
 		getTabCount(key) {
@@ -160,7 +141,7 @@ export default {
 		payOrder(order) {
 			uni.showModal({
 				title: '确认支付',
-				content: `订单金额：¥${order.totalPrice.toFixed(2)}`,
+				content: '订单金额：¥' + order.totalPrice.toFixed(2),
 				success: (res) => {
 					if (res.confirm) {
 						uni.showLoading({ title: '支付中...' })
@@ -168,7 +149,7 @@ export default {
 							uni.hideLoading()
 							store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待发货' })
 							uni.showToast({ title: '支付成功', icon: 'success' })
-							
+
 							setTimeout(() => {
 								store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待收货' })
 							}, 2000)
@@ -179,7 +160,7 @@ export default {
 		},
 		remindShip(order) {
 			uni.showToast({ title: '已提醒卖家发货', icon: 'none' })
-			
+
 			setTimeout(() => {
 				store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待收货' })
 			}, 2000)
@@ -215,18 +196,8 @@ page {
 .container {
 	display: flex;
 	flex-direction: column;
-	height: 100%;
-	padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
-	box-sizing: border-box;
+	min-height: 100%;
 }
-
-.header {
-	padding: 60rpx 24rpx 20rpx;
-	background-color: #fff;
-	border-bottom: 1rpx solid #f0f0f0;
-}
-
-.header-title { font-size: 36rpx; font-weight: bold; color: #333; }
 
 .tabs {
 	display: flex;

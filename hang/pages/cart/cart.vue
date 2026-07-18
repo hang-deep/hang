@@ -16,18 +16,18 @@
 				<view 
 					class="cart-item" 
 					v-for="item in cartList" 
-					:key="item.id"
-					@click="goDetail(item.id)"
+					:key="item.cartId || item.id"
+					@click="goDetail(item.goodsId)"
 				>
 					<view class="item-checkbox" v-if="isEditing" @click.stop>
-						<view class="checkbox" :class="{ checked: selectedItems.includes(item.id) }" @click="toggleSelect(item.id)">
-							<text v-if="selectedItems.includes(item.id)">✓</text>
+						<view class="checkbox" :class="{ checked: selectedItems.includes(item.goodsId) }" @click="toggleSelect(item.goodsId)">
+							<text v-if="selectedItems.includes(item.goodsId)">✓</text>
 						</view>
 					</view>
-					<image class="item-image" :src="item.image" mode="aspectFill" />
+					<image class="item-image" :src="item.img || '/static/goods/default.png'" mode="aspectFill" />
 					<view class="item-info">
 						<text class="item-name">{{ item.name }}</text>
-						<text class="item-desc">{{ item.desc }}</text>
+						<text class="item-desc">库存：{{ item.stock }}件</text>
 						<view class="item-bottom">
 							<text class="item-price">¥{{ item.price }}</text>
 							<view class="item-control">
@@ -80,76 +80,159 @@
 </template>
 
 <script>
-import store from '@/utils/store.js'
-
 export default {
 	data() {
 		return {
 			isEditing: false,
-			selectedItems: []
+			selectedItems: [],
+			cartList: [],
+			userId: 1
 		}
 	},
 	computed: {
-		cartList() {
-			return store.getters.cartList
-		},
 		isAllSelected() {
 			return this.cartList.length > 0 && this.selectedItems.length === this.cartList.length
 		},
 		selectedCount() {
-			return this.selectedItems.reduce((sum, id) => {
-				const item = this.cartList.find(i => i.id === id)
+			return this.selectedItems.reduce((sum, goodsId) => {
+				const item = this.cartList.find(i => i.goodsId === goodsId)
 				return sum + (item ? item.quantity : 0)
 			}, 0)
 		},
 		selectedTotal() {
-			return this.selectedItems.reduce((sum, id) => {
-				const item = this.cartList.find(i => i.id === id)
-				return sum + (item ? item.price * item.quantity : 0)
+			return this.selectedItems.reduce((sum, goodsId) => {
+				const item = this.cartList.find(i => i.goodsId === goodsId)
+				return sum + (item ? parseFloat(item.price) * item.quantity : 0)
 			}, 0)
 		}
 	},
 	onShow() {
-		this.selectedItems = this.cartList.map(item => item.id)
+		this.loadCartList()
 	},
 	methods: {
+		loadCartList() {
+			uni.showLoading({ title: '加载中...' })
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/getCartList',
+				method: 'GET',
+				data: { userId: this.userId },
+				success: (res) => {
+					uni.hideLoading()
+					if (res.data.code === 200) {
+						this.cartList = res.data.data
+						this.selectedItems = this.cartList.map(item => item.goodsId)
+					} else {
+						uni.showToast({ title: '加载失败', icon: 'none' })
+					}
+				},
+				fail: () => {
+					uni.hideLoading()
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
+		},
 		toggleEdit() {
 			this.isEditing = !this.isEditing
 			if (!this.isEditing) {
-				this.selectedItems = this.cartList.map(item => item.id)
+				this.selectedItems = this.cartList.map(item => item.goodsId)
 			}
 		},
-		toggleSelect(id) {
-			const index = this.selectedItems.indexOf(id)
+		toggleSelect(goodsId) {
+			const index = this.selectedItems.indexOf(goodsId)
 			if (index > -1) {
 				this.selectedItems.splice(index, 1)
 			} else {
-				this.selectedItems.push(id)
+				this.selectedItems.push(goodsId)
 			}
 		},
 		toggleSelectAll() {
 			if (this.isAllSelected) {
 				this.selectedItems = []
 			} else {
-				this.selectedItems = this.cartList.map(item => item.id)
+				this.selectedItems = this.cartList.map(item => item.goodsId)
 			}
 		},
 		increaseCart(item) {
-			store.mutations.INCREASE_CART(store.state, item.id)
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/updateCart',
+				method: 'POST',
+				data: {
+					userId: this.userId,
+					goodsId: item.goodsId,
+					quantity: item.quantity + 1
+				},
+				success: (res) => {
+					if (res.data.code === 200) {
+						this.loadCartList()
+					} else {
+						uni.showToast({ title: '更新失败', icon: 'none' })
+					}
+				},
+				fail: () => {
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
 		},
 		decreaseCart(item) {
-			store.mutations.DECREASE_CART(store.state, item.id)
+			if (item.quantity <= 1) {
+				this.deleteCart(item)
+				return
+			}
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/updateCart',
+				method: 'POST',
+				data: {
+					userId: this.userId,
+					goodsId: item.goodsId,
+					quantity: item.quantity - 1
+				},
+				success: (res) => {
+					if (res.data.code === 200) {
+						this.loadCartList()
+					} else {
+						uni.showToast({ title: '更新失败', icon: 'none' })
+					}
+				},
+				fail: () => {
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
 		},
 		deleteCart(item) {
-			store.mutations.DELETE_FROM_CART(store.state, item.id)
-			const index = this.selectedItems.indexOf(item.id)
-			if (index > -1) {
-				this.selectedItems.splice(index, 1)
-			}
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/deleteFromCart',
+				method: 'POST',
+				data: {
+					userId: this.userId,
+					goodsId: item.goodsId
+				},
+				success: (res) => {
+					if (res.data.code === 200) {
+						this.loadCartList()
+					} else {
+						uni.showToast({ title: '删除失败', icon: 'none' })
+					}
+				},
+				fail: () => {
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
 		},
 		deleteSelected() {
-			this.selectedItems.forEach(id => {
-				store.mutations.DELETE_FROM_CART(store.state, id)
+			this.selectedItems.forEach(goodsId => {
+				uni.request({
+					url: 'http://127.0.0.1:3000/api/deleteFromCart',
+					method: 'POST',
+					data: {
+						userId: this.userId,
+						goodsId: goodsId
+					},
+					success: (res) => {
+						if (res.data.code === 200) {
+							this.loadCartList()
+						}
+					}
+				})
 			})
 			this.selectedItems = []
 		},

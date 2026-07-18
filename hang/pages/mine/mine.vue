@@ -8,13 +8,13 @@
 				</view>
 			</view>
 			<view class="user-actions">
-					<view class="switch-user-btn" @click="goUserManage">
-						<text>切换用户</text>
-					</view>
-					<view class="user-arrow">›</view>
+				<view class="switch-user-btn" @click="goUserManage">
+					<text>切换用户</text>
 				</view>
+				<text class="user-arrow">›</text>
+			</view>
 		</view>
-		
+
 		<view class="stats-card">
 			<view class="stats-item" @click="goOrders">
 				<text class="stats-value">{{ ordersCount }}</text>
@@ -33,7 +33,7 @@
 				<text class="stats-label">已完成</text>
 			</view>
 		</view>
-		
+
 		<view class="menu-list">
 			<view class="menu-card">
 				<view class="menu-item" @click="goOrders">
@@ -41,10 +41,9 @@
 					<text class="menu-text">我的订单</text>
 					<text class="menu-arrow">›</text>
 				</view>
-				<view class="menu-item" @click="showCoupon">
-					<text class="menu-icon">🎫</text>
-					<text class="menu-text">优惠券</text>
-					<view class="menu-badge">3张可用</view>
+				<view class="menu-item" @click="showHistory">
+					<text class="menu-icon">👁️</text>
+					<text class="menu-text">浏览记录</text>
 					<text class="menu-arrow">›</text>
 				</view>
 				<view class="menu-item" @click="showFavorite">
@@ -53,7 +52,7 @@
 					<text class="menu-arrow">›</text>
 				</view>
 			</view>
-			
+
 			<view class="menu-card">
 				<view class="menu-item" @click="showAddress">
 					<text class="menu-icon">📍</text>
@@ -107,13 +106,13 @@ export default {
 	methods: {
 		goOrders(type) {
 			if (type) {
-				uni.switchTab({ url: '/pages/orders/orders' })
+				uni.navigateTo({ url: '/pages/orders/orders?type=' + type })
 			} else {
-				uni.switchTab({ url: '/pages/orders/orders' })
+				uni.navigateTo({ url: '/pages/orders/orders' })
 			}
 		},
-		showCoupon() {
-			uni.showToast({ title: '优惠券功能开发中', icon: 'none' })
+		showHistory() {
+			uni.navigateTo({ url: '/pages/history/history' })
 		},
 		showFavorite() {
 			uni.navigateTo({ url: '/pages/favorites/favorites' })
@@ -155,49 +154,124 @@ page {
 	justify-content: space-between;
 	align-items: center;
 	background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
-	padding: 70rpx 32rpx 32rpx;
+	padding: 70rpx 32rpx 40rpx;
 }
 
-.user-info { display: flex; align-items: center; }
-.user-avatar {
-	width: 120rpx; height: 120rpx; background-color: rgba(255, 255, 255, 0.3);
-	border-radius: 50%; display: flex; align-items: center; justify-content: center;
-	font-size: 56rpx; margin-right: 24rpx;
+.user-info {
+	display: flex;
+	align-items: center;
 }
-.user-detail { display: flex; flex-direction: column; }
-.user-name { font-size: 36rpx; font-weight: bold; color: #fff; }
-.user-actions { display: flex; flex-direction: column; align-items: center; }
+
+.user-avatar {
+	width: 120rpx;
+	height: 120rpx;
+	background-color: rgba(255, 255, 255, 0.3);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 56rpx;
+	margin-right: 24rpx;
+}
+
+.user-detail {
+	display: flex;
+	flex-direction: column;
+}
+
+.user-name {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #fff;
+}
+
+.user-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
 .switch-user-btn {
-			background-color: rgba(255, 255, 255, 0.3);
-			border: 1rpx solid rgba(255, 255, 255, 0.5);
-			padding: 8rpx 20rpx;
-			border-radius: 20rpx;
-			margin-bottom: 8rpx;
-		}
-		.switch-user-btn text { font-size: 22rpx; color: #fff; }
-		.user-arrow { font-size: 48rpx; color: rgba(255, 255, 255, 0.8); }
+	background-color: rgba(255, 255, 255, 0.3);
+	border: 1rpx solid rgba(255, 255, 255, 0.5);
+	padding: 8rpx 20rpx;
+	border-radius: 20rpx;
+	margin-bottom: 8rpx;
+}
+
+.switch-user-btn text {
+	font-size: 22rpx;
+	color: #fff;
+}
+
+.user-arrow {
+	font-size: 48rpx;
+	color: rgba(255, 255, 255, 0.8);
+}
 
 .stats-card {
-	display: flex; background-color: #fff;
-	margin: -40rpx 20rpx 20rpx; border-radius: 16rpx;
-	padding: 32rpx 0; box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+	display: flex;
+	background-color: #fff;
+	margin: -50rpx 24rpx 24rpx;
+	border-radius: 20rpx;
+	padding: 32rpx 0;
+	box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
 }
-.stats-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
-.stats-value { font-size: 40rpx; font-weight: bold; color: #ff6b6b; }
-.stats-label { font-size: 24rpx; color: #999; margin-top: 8rpx; }
 
-.menu-list { padding: 0 20rpx; }
-.menu-card { background-color: #fff; border-radius: 16rpx; margin-bottom: 20rpx; overflow: hidden; }
+.stats-item {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.stats-value {
+	font-size: 44rpx;
+	font-weight: bold;
+	color: #ff6b6b;
+}
+
+.stats-label {
+	font-size: 24rpx;
+	color: #999;
+	margin-top: 8rpx;
+}
+
+.menu-list {
+	padding: 0 24rpx;
+}
+
+.menu-card {
+	background-color: #fff;
+	border-radius: 16rpx;
+	margin-bottom: 20rpx;
+	overflow: hidden;
+}
+
 .menu-item {
-	display: flex; align-items: center; padding: 28rpx 24rpx;
+	display: flex;
+	align-items: center;
+	padding: 32rpx 24rpx;
 	border-bottom: 1rpx solid #f5f5f5;
 }
-.menu-item:last-child { border-bottom: none; }
-.menu-icon { font-size: 40rpx; margin-right: 20rpx; }
-.menu-text { flex: 1; font-size: 30rpx; color: #333; }
-.menu-badge {
-	background-color: #ff6b6b; color: #fff; font-size: 22rpx;
-	padding: 6rpx 16rpx; border-radius: 20rpx; margin-right: 16rpx;
+
+.menu-item:last-child {
+	border-bottom: none;
 }
-.menu-arrow { font-size: 36rpx; color: #ccc; }
+
+.menu-icon {
+	font-size: 44rpx;
+	margin-right: 24rpx;
+}
+
+.menu-text {
+	flex: 1;
+	font-size: 32rpx;
+	color: #333;
+}
+
+.menu-arrow {
+	font-size: 36rpx;
+	color: #ccc;
+}
 </style>

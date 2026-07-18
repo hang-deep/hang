@@ -101,7 +101,8 @@ export default {
 			salesCount: '1000+',
 			reviewCount: '200+',
 			detailInfo: [],
-			reviews: []
+			reviews: [],
+			userId: 1
 		}
 	},
 	onLoad(options) {
@@ -123,6 +124,11 @@ export default {
 					this.goods = goodsList.find(item => item.id === goodsId) || goodsList[0]
 					this.initDetailInfo()
 					this.initReviews()
+					if (this.goods && this.goods.id) {
+						store.mutations.ADD_TO_HISTORY(store.state, this.goods)
+						console.log('浏览记录添加成功:', this.goods.name)
+						console.log('当前浏览记录长度:', store.getters.history.length)
+					}
 				}
 			},
 			fail: () => {
@@ -460,9 +466,37 @@ export default {
 			}
 		},
 		addToCart() {
-			store.mutations.ADD_TO_CART(store.state, this.goods)
-			this.cartCount = store.getters.cartCount
-			uni.showToast({ title: '已加入购物车', icon: 'success' })
+			console.log('加入购物车按钮点击')
+			console.log('userId:', this.userId)
+			console.log('goods:', this.goods)
+			if (!this.goods || !this.goods.id) {
+				console.log('商品数据未加载')
+				uni.showToast({ title: '商品数据未加载', icon: 'none' })
+				return
+			}
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/addToCart',
+				method: 'POST',
+				data: {
+					userId: this.userId,
+					goodsId: this.goods.id,
+					name: this.goods.name,
+					price: this.goods.price,
+					quantity: 1
+				},
+				success: (res) => {
+					console.log('加入购物车响应:', res)
+					if (res.data && res.data.code === 200) {
+						uni.showToast({ title: '已加入购物车', icon: 'success' })
+					} else {
+						uni.showToast({ title: res.data?.message || '添加失败', icon: 'none' })
+					}
+				},
+				fail: (err) => {
+					console.log('加入购物车失败:', err)
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
 		},
 		toggleFavorite() {
 			if (!this.goods.id) return
@@ -470,8 +504,27 @@ export default {
 			uni.showToast({ title: this.isFavorite ? '已收藏' : '已取消收藏', icon: 'none' })
 		},
 		buyNow() {
-			store.mutations.ADD_TO_CART(store.state, this.goods)
-			uni.navigateTo({ url: '/pages/checkout/checkout' })
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/addToCart',
+				method: 'POST',
+				data: {
+					userId: this.userId,
+					goodsId: this.goods.id,
+					name: this.goods.name,
+					price: this.goods.price,
+					quantity: 1
+				},
+				success: (res) => {
+					if (res.data.code === 200) {
+						uni.navigateTo({ url: `/pages/checkout/checkout?selectedIds=${this.goods.id}` })
+					} else {
+						uni.showToast({ title: '添加失败', icon: 'none' })
+					}
+				},
+				fail: () => {
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
 		},
 		goHome() {
 			uni.switchTab({ url: '/pages/index/index' })

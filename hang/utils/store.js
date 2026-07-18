@@ -5,6 +5,7 @@ const state = reactive({
   orders: [],
   favorites: [],
   addresses: [],
+  history: [],
   userInfo: {
     name: '用户',
     avatar: '',
@@ -104,6 +105,25 @@ const mutations = {
     state.addresses.forEach(item => {
       item.isDefault = item.id === id
     })
+  },
+  ADD_TO_HISTORY(state, goods) {
+    const index = state.history.findIndex(item => item.id === goods.id)
+    if (index > -1) {
+      state.history.splice(index, 1)
+    }
+    state.history.unshift({ ...goods, viewTime: new Date().toLocaleString() })
+    if (state.history.length > 50) {
+      state.history.pop()
+    }
+  },
+  CLEAR_HISTORY(state) {
+    state.history = []
+  },
+  REMOVE_FROM_HISTORY(state, goodsId) {
+    const index = state.history.findIndex(item => item.id === goodsId)
+    if (index > -1) {
+      state.history.splice(index, 1)
+    }
   }
 }
 
@@ -140,6 +160,12 @@ const getters = {
   },
   get defaultAddress() {
     return state.addresses.find(item => item.isDefault) || state.addresses[0] || null
+  },
+  get history() {
+    return state.history
+  },
+  get historyCount() {
+    return state.history.length
   }
 }
 

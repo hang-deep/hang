@@ -30,13 +30,8 @@
 						<text class="goods-desc">{{ goods.desc }}</text>
 						<view class="goods-bottom">
 							<text class="goods-price">¥{{ goods.price }}</text>
-							<view class="goods-actions">
-								<view class="favorite-btn" :class="{ active: isFavorite(goods.id) }" @click.stop="toggleFavorite(goods)">
-									<text>{{ isFavorite(goods.id) ? '❤️' : '🤍' }}</text>
-								</view>
-								<view class="add-cart" @click.stop="addToCart(goods)">
-									<text>+</text>
-								</view>
+							<view class="favorite-btn" :class="{ active: isFavorite(goods.id) }" @click.stop="toggleFavorite(goods)">
+								<text>{{ isFavorite(goods.id) ? '❤️' : '🤍' }}</text>
 							</view>
 						</view>
 					</view>
@@ -229,26 +224,20 @@ page {
 }
 .goods-list { 
 	display: flex; 
-	flex-wrap: wrap; 
-	justify-content: space-between; 
+	flex-direction: column;
 	padding-bottom: calc(100rpx + env(safe-area-inset-bottom) + 40rpx);
 }
 .goods-item {
-	width: calc(50% - 10rpx); background-color: #fff; border-radius: 16rpx;
+	display: flex; background-color: #fff; border-radius: 16rpx;
 	margin-bottom: 20rpx; overflow: hidden;
 }
-.goods-image { width: 100%; height: 280rpx; }
-.goods-info { padding: 16rpx; }
-.goods-name { font-size: 28rpx; font-weight: bold; color: #333; display: block; margin-bottom: 8rpx; }
-.goods-desc { font-size: 24rpx; color: #999; display: block; margin-bottom: 12rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goods-image { width: 200rpx; height: 200rpx; }
+.goods-info { padding: 20rpx; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.goods-name { font-size: 32rpx; font-weight: bold; color: #333; display: block; }
+.goods-desc { font-size: 26rpx; color: #999; display: block; }
 .goods-bottom { display: flex; justify-content: space-between; align-items: center; }
-.goods-price { font-size: 32rpx; font-weight: bold; color: #ff6b6b; }
-.goods-actions { display: flex; align-items: center; }
+.goods-price { font-size: 36rpx; font-weight: bold; color: #ff6b6b; }
 .favorite-btn {
-	font-size: 36rpx; margin-right: 16rpx;
-}
-.add-cart {
-	width: 48rpx; height: 48rpx; background-color: #ff6b6b; border-radius: 50%;
-	display: flex; align-items: center; justify-content: center; color: #fff; font-size: 32rpx;
+	font-size: 40rpx;
 }
 </style>

@@ -29,13 +29,13 @@
 					<text class="section-count">共{{ totalCount }}件</text>
 				</view>
 				<view class="goods-list">
-					<view class="goods-item" v-for="item in cartList" :key="item.id">
-						<image class="item-image" :src="item.image" mode="aspectFill" />
+					<view class="goods-item" v-for="item in cartList" :key="item.cartId">
+						<image class="item-image" :src="item.img" mode="aspectFill" />
 						<view class="item-info">
 							<text class="item-name">{{ item.name }}</text>
-							<text class="item-desc">{{ item.desc }}</text>
+							<text class="item-desc">库存：{{ item.stock }}件</text>
 							<view class="item-bottom">
-								<text class="item-price">¥{{ item.price.toFixed(2) }}</text>
+								<text class="item-price">¥{{ parseFloat(item.price).toFixed(2) }}</text>
 								<text class="item-quantity">x{{ item.quantity }}</text>
 							</view>
 						</view>
@@ -192,15 +192,16 @@ export default {
 				{ key: 'card', name: '银行卡', icon: '🏦' }
 			],
 			selectedCoupon: null,
-			selectedIds: []
+			selectedIds: [],
+			userId: 1
 		}
 	},
 	computed: {
 		totalPrice() {
-			return this.cartList.reduce((sum, item) => sum + item.price * item.quantity, 0)
+			return this.cartList.reduce((sum, item) => sum + parseFloat(item.price) * parseInt(item.quantity), 0)
 		},
 		totalCount() {
-			return this.cartList.reduce((sum, item) => sum + item.quantity, 0)
+			return this.cartList.reduce((sum, item) => sum + parseInt(item.quantity), 0)
 		},
 		finalPrice() {
 			let price = this.totalPrice
@@ -218,16 +219,40 @@ export default {
 	onShow() {
 		this.addresses = store.getters.addresses
 		this.selectedAddress = store.getters.defaultAddress
-		
-		if (this.selectedIds.length > 0) {
-			this.cartList = store.getters.cartList.filter(item => 
-				item.quantity > 0 && this.selectedIds.includes(item.id)
-			)
-		} else {
-			this.cartList = store.getters.cartList.filter(item => item.quantity > 0)
-		}
+		this.loadCartList()
 	},
 	methods: {
+		loadCartList() {
+			console.log('loadCartList - selectedIds:', this.selectedIds)
+			console.log('loadCartList - userId:', this.userId)
+			uni.showLoading({ title: '加载中...' })
+			uni.request({
+				url: 'http://127.0.0.1:3000/api/getCartList',
+				method: 'GET',
+				data: { userId: this.userId },
+				success: (res) => {
+					uni.hideLoading()
+					console.log('loadCartList - response:', res.data)
+					if (res.data.code === 200) {
+						let data = res.data.data
+						console.log('loadCartList - all cart data:', data)
+						if (this.selectedIds.length > 0) {
+							data = data.filter(item => this.selectedIds.includes(parseInt(item.goodsId)))
+							console.log('loadCartList - filtered data:', data)
+						}
+						this.cartList = data
+						console.log('loadCartList - cartList:', this.cartList)
+					} else {
+						uni.showToast({ title: '加载失败', icon: 'none' })
+					}
+				},
+				fail: (err) => {
+					uni.hideLoading()
+					console.log('loadCartList - network error:', err)
+					uni.showToast({ title: '网络错误', icon: 'none' })
+				}
+			})
+		},
 		goBack() {
 			uni.navigateBack()
 		},
@@ -273,26 +298,84 @@ export default {
 			this.showPayModal = false
 		},
 		confirmPay() {
+			console.log('confirmPay - cartList:', this.cartList)
+			console.log('confirmPay - selectedAddress:', this.selectedAddress)
+			console.log('confirmPay - totalPrice:', this.totalPrice)
+			console.log('confirmPay - finalPrice:', this.finalPrice)
+			
+			if (this.cartList.length === 0) {
+				uni.showToast({ title: '购物车为空', icon: 'none' })
+				return
+			}
+			
+			if (!this.selectedAddress) {
+				uni.showToast({ title: '请选择收货地址', icon: 'none' })
+				return
+			}
+			
 			this.showPayModal = false
 			uni.showLoading({ title: '支付中...' })
-			setTimeout(() => {
+			
+			const order = {
+				id: Date.now(),
+				createTime: new Date().toLocaleString(),
+				items: this.cartList.map(item => ({
+					id: item.goodsId,
+					name: item.name,
+					price: parseFloat(item.price),
+					quantity: parseInt(item.quantity),
+					image: item.img,
+					desc: `库存：${item.stock}件`
+				})),
+				totalPrice: parseFloat(this.totalPrice.toFixed(2)),
+				finalPrice: parseFloat(this.finalPrice.toFixed(2)),
+				status: '待支付',
+				address: this.selectedAddress,
+				paymentMethod: this.getPaymentName(),
+				remark: this.remark
+			}
+			
+			console.log('confirmPay - order:', order)
+			
+			store.state.orders.unshift(order)
+			console.log('confirmPay - orders after adding:', store.state.orders.length)
+			
+			const deletePromises = this.cartList.map(item => {
+				return new Promise((resolve) => {
+					uni.request({
+						url: 'http://127.0.0.1:3000/api/deleteFromCart',
+						method: 'POST',
+						data: {
+							userId: this.userId,
+							goodsId: item.goodsId
+						},
+						success: () => resolve(),
+						fail: () => resolve()
+					})
+				})
+			})
+			
+			Promise.all(deletePromises).then(() => {
 				uni.hideLoading()
 				
-				const order = store.mutations.CREATE_ORDER(store.state, this.selectedAddress)
-				if (order) {
-					order.paymentMethod = this.getPaymentName()
-					order.remark = this.remark
-					order.finalPrice = this.finalPrice
-					
-					setTimeout(() => {
-						store.mutations.UPDATE_ORDER_STATUS(store.state, { orderId: order.id, status: '待发货' })
-					}, 2000)
-					
-					uni.navigateTo({ 
-						url: `/pages/paySuccess/paySuccess?amount=${this.finalPrice}&paymentMethod=${this.getPaymentName()}` 
-					})
-				}
-			}, 1500)
+				setTimeout(() => {
+					const createdOrder = store.state.orders.find(o => o.id === order.id)
+					if (createdOrder) {
+						createdOrder.status = '待发货'
+					}
+				}, 2000)
+				
+				console.log('confirmPay - navigating to paySuccess')
+				uni.navigateTo({ 
+					url: `/pages/paySuccess/paySuccess?amount=${this.finalPrice}&paymentMethod=${this.getPaymentName()}` 
+				})
+			}).catch(() => {
+				uni.hideLoading()
+				console.log('confirmPay - navigating to paySuccess (after error)')
+				uni.navigateTo({ 
+					url: `/pages/paySuccess/paySuccess?amount=${this.finalPrice}&paymentMethod=${this.getPaymentName()}` 
+				})
+			})
 		}
 	}
 }

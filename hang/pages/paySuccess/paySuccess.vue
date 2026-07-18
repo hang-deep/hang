@@ -69,7 +69,7 @@ export default {
 	},
 	methods: {
 		goOrders() {
-			uni.switchTab({ url: '/pages/orders/orders' })
+			uni.navigateTo({ url: '/pages/orders/orders' })
 		},
 		goHome() {
 			uni.switchTab({ url: '/pages/index/index' })
